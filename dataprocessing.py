@@ -3,6 +3,7 @@ import json
 import os
 
 import torch
+from torchvision import datasets, transforms
 import numpy as np
 from PIL import Image
 
@@ -36,6 +37,35 @@ class ImageLoader():
         Create the loaders
         :return: Dataloaders and datasets
         """
-        pass
+        data_transforms = {
+            'train': transforms.Compose([
+                # transforms.Resize(scale),
+                transforms.RandomRotation(degrees=30),
+                transforms.RandomResizedCrop(self.input_size),
+                transforms.RandomVerticalFlip(p=0.3),
+                transforms.RandomHorizontalFlip(p=0.4),
+                transforms.ToTensor(),
+                transforms.Normalize(self.means, self.stds)
+            ]),
+            'valid': transforms.Compose([
+                transforms.Resize(self.resize),
+                transforms.CenterCrop(self.input_size),
+                transforms.ToTensor(),
+                transforms.Normalize(self.means, self.stds)
+            ]),
+            'test': transforms.Compose([
+                transforms.Resize(self.resize),
+                transforms.CenterCrop(self.input_size),
+                transforms.ToTensor(),
+                transforms.Normalize(self.means, self.stds)
+            ])
+        }
+
+        image_datasets = {x: datasets.ImageFolder(os.path.join(self.data_dir, x), data_transforms[x]) for x in
+                          ['train', 'valid', 'test']}
+        dataloaders = {x: DataLoader(image_datasets[x], batch_size=self.batch_sizes[x]) for x in
+                       ['train', 'valid', 'test']}
+
+        return dataloaders, image_datasets
 
 
