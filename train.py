@@ -1,6 +1,9 @@
 import argparse
 import torch
 
+from classifier import ImageClassifier
+from dataprocessing import DataProcessor
+
 
 def main():
     """
@@ -64,7 +67,15 @@ def main():
     args.save_dir = args.save_dir if args.save_dir else args.data_dir
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu') if args.gpu else 'cpu'
 
-    print(args, device)
+    # create the model
+    model = ImageClassifier(device)
+    model.compile(args.arch, args.hiden_units, args.dropout, args.n_classes, args.learning_rate)
+
+    # Load data
+    dataloaders, image_datasets = DataProcessor(args.data_dir).create_loaders()
+
+    model.train(dataloaders, args.epochs, image_datasets)
+    model.save(f'{args.arch}_checkpoint.pth')
 
 
 if __name__ == '__main__':
