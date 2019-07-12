@@ -176,7 +176,6 @@ class ImageClassifier():
         """
         Saves a model check point
         :param file_name: Path to where the model is saved
-        :return:
         """
         checkpoint = {
             'model': self.model,
@@ -189,3 +188,29 @@ class ImageClassifier():
         }
 
         torch.save(checkpoint, file_name)
+
+    def load(self, filename):
+        """
+        Loads the model from a checkpoint file
+        :param filename: Path to the checkpoint file
+        """
+
+        start_epoch = 0
+        if os.path.isfile(filename):
+            print("=> loading checkpoint '{}'".format(filename))
+            checkpoint = torch.load(filename)
+            start_epoch = checkpoint['epochs']
+
+            self.model = checkpoint['model']
+            self.model = self.model.to(self.device)
+            self.model.class_to_idx = checkpoint['class_to_idx']
+            self.model.load_state_dict(checkpoint['state_dict'])
+
+            self.optimizer = SGD(self.model.classifier.parameters(), lr=(checkpoint['LR'] if 'LR' in checkpoint else 0.001), momentum=0.9)
+            self.optimizer.load_state_dict(checkpoint['optimizer'])
+
+            self.scheduler = lr_scheduler.StepLR(self.optimizer, step_size=7, gamma=0.1)
+            self.scheduler.load_state_dict(checkpoint['scheduler'])
+            print(f"=> loaded checkpoint '{filename}' (epoch {checkpoint['epochs']})")
+        else:
+            print(f"=> no checkpoint found at '{filename}'")
