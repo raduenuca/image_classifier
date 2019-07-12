@@ -62,3 +62,7 @@ For the command line app
       ```python predict.py input checkpoint --gpu```
 
 This will open the iPython Notebook software and project file in your browser.
+
+### Note
+
+Both the Jupyter Notebook file and the HMTL version of it are pretty big and cannot load correctly inside GitHub. You have to clone the project locally
