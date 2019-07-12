@@ -69,3 +69,38 @@ class ImageLoader():
         return dataloaders, image_datasets
 
 
+def process_image(image_path):
+    """
+    Scales, crops, and normalizes a PIL image for a PyTorch model
+    :param image_path: Path to the image
+    :return: returns an Numpy array
+    """
+
+    image = Image.open(image_path)
+
+    # scale
+    scale_size = 256, 256
+    image.thumbnail(scale_size, Image.LANCZOS)
+
+    # crop
+    crop_size = 224
+    width, height = image.size  # Get dimensions
+
+    left = (width - crop_size) / 2
+    top = (height - crop_size) / 2
+    right = (width + crop_size) / 2
+    bottom = (height + crop_size) / 2
+
+    image = image.crop((left, top, right, bottom))
+
+    # normalize
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+    image_array = np.array(image) / 255
+
+    image = (image_array - mean) / std
+
+    # reorder dimensions
+    image = image.transpose((2, 0, 1))
+
+    return torch.from_numpy(image).unsqueeze_(0)
