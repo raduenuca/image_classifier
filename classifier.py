@@ -172,6 +172,35 @@ class ImageClassifier():
         print(f'Avg acc (test): {avg_acc:.4f}')
         print('-' * 10)
 
+    def predict(self, image, topk=1, cat_to_name=None):
+        """
+        Predict the class (or classes) of an image using a trained deep learning model.
+        :param image: Images used for prediction
+        :param topk: Number of classes to return
+        :param cat_to_name: Mapping to category names
+        :return: Class names and probabilities
+        """
+        image = image.to(self.device).float()
+
+        self.model.eval()
+
+        with torch.no_grad():
+            output = self.model(image)
+            prob, idxs = torch.topk(output, topk)
+
+            # convert indices to classes
+            idxs = np.array(idxs)
+            idx_to_class = {val: key for key, val in self.model.class_to_idx.items()}
+            classes = [idx_to_class[idx] for idx in idxs[0]]
+
+            # map the class name with collected topk classes
+            names = []
+            for cls in classes:
+                names.append(cls if cat_to_name is None else cat_to_name[str(cls)])
+
+            return prob, names
+
+
     def save(self, file_name):
         """
         Saves a model check point
