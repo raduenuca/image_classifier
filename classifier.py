@@ -178,4 +178,14 @@ class ImageClassifier():
         :param file_name: Path to where the model is saved
         :return:
         """
-        pass
+        checkpoint = {
+            'model': self.model,
+            'state_dict': self.model.state_dict(),
+            'optimizer': self.optimizer_ft.state_dict(),
+            'scheduler': self.scheduler.state_dict(),
+            'class_to_idx': self.model.class_to_idx,
+            'epochs' : self.epochs,
+            'LR': self.learning_rate
+        }
+
+        torch.save(checkpoint, file_name)
