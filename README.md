@@ -3,7 +3,7 @@
 
 ## Project goal
 
-* The first part of the project consists on implementing an image classifier with PyTorch using a Jupyter notebook.
+* The first part of the project consists of implementing an image classifier with PyTorch using a Jupyter notebook.
 * The second part consists of building a command line application that others can use
 
 ### Data
@@ -16,7 +16,7 @@ This project uses the following software and Python libraries:
 
 * [Python](https://www.python.org/downloads/release/python-364/)
 * [NumPy](http://www.numpy.org/)
-* [pands](https://pandas.pydata.org/)
+* [pandas](https://pandas.pydata.org/)
 * [Matplotlib](https://matplotlib.org/)
 * [PyTorch](https://pytorch.org/)
 
