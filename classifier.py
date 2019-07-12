@@ -65,88 +65,117 @@ class ImageClassifier():
         self.scheduler = lr_scheduler.StepLR(self.optimizer, step_size=7, gamma=0.1)
         print(self.model)
 
+    def train(self, dataloaders, num_epochs, image_datasets):
+        """
+        Trains the model on data
+        :param dataloaders: Dataloaders for train, test and validate sets
+        :param num_epochs: Number of epochs to train on
+        :param image_datasets: ImageDatasets
+        :return:
+        """
+        since = time.time()
 
-def train(self, dataloaders, num_epochs, image_datasets):
-    """
-    Trains the model on data
-    :param dataloaders: Dataloaders for train, test and validate sets
-    :param num_epochs: Number of epochs to train on
-    :param image_datasets: ImageDatasets
-    :return:
-    """
-    since = time.time()
+        best_model_wts = copy.deepcopy(self.model.state_dict())
+        best_acc = 0.0
 
-    best_model_wts = copy.deepcopy(self.model.state_dict())
-    best_acc = 0.0
+        self.epochs = num_epochs
+        for epoch in range(self.epochs):
+            print(f'Epoch {epoch + 1}/{num_epochs}')
+            print('-' * 10)
 
-    self.epochs = num_epochs
-    for epoch in range(self.epochs):
-        print(f'Epoch {epoch + 1}/{num_epochs}')
-        print('-' * 10)
+            # Each epoch has a training and validation phase
+            for phase in ['train', 'valid']:
+                if phase == 'train':
+                    self.scheduler.step()
+                    self.model.train()  # Set model to training mode
+                else:
+                    self.model.eval()  # Set model to evaluate mode
 
-        # Each epoch has a training and validation phase
-        for phase in ['train', 'valid']:
-            if phase == 'train':
-                self.scheduler.step()
-                self.model.train()  # Set model to training mode
-            else:
-                self.model.eval()  # Set model to evaluate mode
+                running_loss = 0.0
+                running_corrects = 0
 
-            running_loss = 0.0
-            running_corrects = 0
+                # Iterate over data.
+                for inputs, labels in dataloaders[phase]:
+                    inputs = inputs.to(self.device)
+                    labels = labels.to(self.device)
 
-            # Iterate over data.
-            for inputs, labels in dataloaders[phase]:
+                    # zero the parameter gradients
+                    self.optimizer.zero_grad()
+
+                    # forward
+                    # track history if only in train
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = self.model(inputs)
+                        if type(outputs) == tuple:
+                            outputs, _ = outputs
+
+                        _, preds = torch.max(outputs, 1)
+                        loss = self.criterion(outputs, labels)
+
+                        # backward + optimize only if in training phase
+                        if phase == 'train':
+                            loss.backward()
+                            self.optimizer.step()
+
+                    # statistics
+                    running_loss += loss.item() * inputs.size(0)
+                    running_corrects += torch.sum(preds == labels.data)
+
+                epoch_loss = running_loss / len(image_datasets[phase])
+                epoch_acc = running_corrects.double() / len(image_datasets[phase])
+
+                print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+
+                # deep copy the model
+                if phase == 'valid' and epoch_acc > best_acc:
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(self.model.state_dict())
+
+            print()
+
+        time_elapsed = time.time() - since
+        print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
+        print(f'Best val Acc: {best_acc:4f}')
+
+        # load best model weights
+        self.model.load_state_dict(best_model_wts)
+        self.model.class_to_idx = image_datasets['train'].class_to_idx
+
+    def evaluate(self, dataloader, dataset_size):
+        """
+        Evaluates the model against a test dataset
+        :param dataloader: Dataloader for the test data
+        :param dataset_size: Size of the dataset
+        """
+        since = time.time()
+
+        avg_acc = 0
+        acc_test = 0
+
+        self.model.eval()  # Set model to evaluate mode
+
+        with torch.no_grad():
+            for inputs, labels in dataloader:
                 inputs = inputs.to(self.device)
                 labels = labels.to(self.device)
 
-                # zero the parameter gradients
-                self.optimizer.zero_grad()
+                outputs = self.model(inputs)
+                _, preds = torch.max(outputs.data, 1)
 
-                # forward
-                # track history if only in train
-                with torch.set_grad_enabled(phase == 'train'):
-                    outputs = self.model(inputs)
-                    if type(outputs) == tuple:
-                        outputs, _ = outputs
+                acc_test += torch.sum(preds == labels.data).item()
 
-                    _, preds = torch.max(outputs, 1)
-                    loss = self.criterion(outputs, labels)
+        avg_acc = acc_test / dataset_size
 
-                    # backward + optimize only if in training phase
-                    if phase == 'train':
-                        loss.backward()
-                        self.optimizer.step()
-
-                # statistics
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
-
-            epoch_loss = running_loss / len(image_datasets[phase])
-            epoch_acc = running_corrects.double() / len(image_datasets[phase])
-
-            print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
-
-            # deep copy the model
-            if phase == 'valid' and epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_model_wts = copy.deepcopy(self.model.state_dict())
-
+        elapsed_time = time.time() - since
         print()
+        print(f'Evaluation completed in {elapsed_time // 60:.0f}m {elapsed_time % 60:.0f}s')
+        print(f'Avg acc (test): {avg_acc:.4f}')
+        print('-' * 10)
 
-    time_elapsed = time.time() - since
-    print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
-    print(f'Best val Acc: {best_acc:4f}')
-
-    # load best model weights
-    self.model.load_state_dict(best_model_wts)
-    self.model.class_to_idx = image_datasets['train'].class_to_idx
-
-
-def save(self, file_name):
-    """
-    Saves a model check point
-    :param file_name: Path to where the model is saved
-    :return:
-    """
-    pass
+    def save(self, file_name):
+        """
+        Saves a model check point
+        :param file_name: Path to where the model is saved
+        :return:
+        """
+        pass
