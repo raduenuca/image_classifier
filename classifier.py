@@ -186,7 +186,7 @@ class ImageClassifier():
 
         with torch.no_grad():
             output = self.model(image)
-            prob, idxs = torch.topk(output, topk)
+            probs, idxs = torch.topk(output, topk)
 
             # convert indices to classes
             idxs = np.array(idxs)
@@ -198,7 +198,9 @@ class ImageClassifier():
             for cls in classes:
                 names.append(cls if cat_to_name is None else cat_to_name[str(cls)])
 
-            return prob, names
+            probs = [100 * np.exp(prob) for prob in probs[0]]
+
+            return zip(names, probs)
 
 
     def save(self, file_name):

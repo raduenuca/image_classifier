@@ -49,10 +49,10 @@ def main():
     model.load(args.checkoint)
 
     # predict
-    probs, names = model.predict(process_image(args.image_path), args.top_k, cat_to_name)
+    predictions = model.predict(process_image(args.image_path), args.top_k, cat_to_name)
 
-    for prob, name in zip(probs[0], names):
-        print(f'{name}: {100 * np.exp(prob):.2f}%')
+    for name, prob in predictions:
+        print(f'{name}: {prob:.2f}%')
 
 
 if __name__ == '__main__':
